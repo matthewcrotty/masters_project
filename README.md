@@ -1,6 +1,7 @@
 # Install Cuda
 
 Install CUDA 11.6: https://developer.nvidia.com/cuda-11-6-0-download-archive
+
 Verify installation:
 /usr/local/cuda/bin/nvcc --version
 
