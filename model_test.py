@@ -129,7 +129,6 @@ for model_name in models:
     model.to(device)
     print("Loaded model from " + model_name + ".pth")
     _, test_loss = create_loss(config)
-    
 
     preds, probs, labels, loss, acc = evaluate(config, model, cifar10_1_loader, test_loss, logger)
 

@@ -2,17 +2,31 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
+bin1 = 0.9404
+bin2 = 0.9622
+
+model_acc1, model_acc2 = [], []
 cifar10_outputs, cifar10_1_outputs = [], [] 
 cifar10_labels, cifar10_1_labels = [], []
-for root, dirs, files in os.walk('../model_outputs'):
+for root, dirs, files in os.walk('./model_outputs'):
     for file in files:
         with np.load(root + '/' +file) as data:
             if "cifar10-1" in file:
                 cifar10_1_outputs.append(np.argmax(data['preds'], axis=1))
                 cifar10_1_labels = data['labels']
+                model_acc1.append(float(data['acc']))
             else:
                 cifar10_outputs.append(np.argmax(data['preds'], axis=1))
                 cifar10_labels = data['labels']
+                model_acc2.append(float(data['acc']))
+                if float(data['acc']) > bin2:
+                    print(len(model_acc2)-1)
+                
+
+
+# idx = [11, 12, 13, 14, 16, 17]
+# cifar10_1_outputs = [cifar10_1_outputs[i] for i in idx]
+# cifar10_outputs = [cifar10_outputs[i] for i in idx]
 
 # n_points x n_models
 cifar10_outputs = np.transpose(np.array(cifar10_outputs, dtype=np.int64))
@@ -27,18 +41,25 @@ for image in cifar10_1_outputs:
 for image in cifar10_outputs:
     output_numbers_10[len(list(set(image)))] += 1
 
-plt.bar(np.arange(10), output_numbers_10_1, 0.3, label='CIFAR10.1')
-plt.bar(np.arange(10)+0.3, output_numbers_10, 0.3, label='CIFAR10')
-plt.xticks([i for i in range(10)], [i for i in range(10)])
-plt.title('Number of Unique Incorrect Predictions')
-plt.xlabel("Unique Image Class Predictions")
-plt.ylabel("Number of Images")
-plt.legend(loc='upper right')
-plt.savefig('./images/datasets_unique.png')
-plt.clf() 
 
-output_numbers_10_1 /= len(cifar10_1_labels)
-output_numbers_10 /= len(cifar10_labels)
+
+# print(model_acc1, model_acc2)
+# model_acc2.sort()
+# print(model_acc2[:len(model_acc2)//3], model_acc2[len(model_acc2)//3:2*len(model_acc2)//3], model_acc2[2*len(model_acc2)//3:])
+
+
+# plt.bar(np.arange(10), output_numbers_10_1, 0.3, label='CIFAR10.1')
+# plt.bar(np.arange(10)+0.3, output_numbers_10, 0.3, label='CIFAR10')
+# plt.xticks([i for i in range(10)], [i for i in range(10)])
+# plt.title('Number of Unique Incorrect Predictions')
+# plt.xlabel("Unique Image Class Predictions")
+# plt.ylabel("Number of Images")
+# plt.legend(loc='upper right')
+# plt.savefig('./images/datasets_unique.png')
+# plt.clf() 
+
+# output_numbers_10_1 /= len(cifar10_1_labels)
+# output_numbers_10 /= len(cifar10_labels)
 
 plt.bar(np.arange(10), output_numbers_10_1, 0.3, label='CIFAR10.1')
 plt.bar(np.arange(10)+0.3, output_numbers_10, 0.3, label='CIFAR10')
