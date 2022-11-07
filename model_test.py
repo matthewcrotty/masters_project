@@ -6,12 +6,14 @@ import time
 import tqdm
 import torch.nn.functional as F
 
-sys.path.append("../pytorch_image_classification/")
+sys.path.append("pytorch_image_classification/")
 from pytorch_image_classification import (
     get_default_config,
     create_model,
     create_loss,
-    create_transform
+    create_transform,
+    create_dataloader,
+    update_config
 )
 
 from pytorch_image_classification.utils import (
@@ -34,7 +36,7 @@ def evaluate(config, model, test_loader, loss_func, logger):
     pred_prob_all = []
     pred_label_all = []
     with torch.no_grad():
-        for data, targets in tqdm.tqdm(test_loader):
+        for data, targets in test_loader:
             
             data = data.type(torch.float32)
             targets = targets.type(torch.int64)
@@ -87,41 +89,62 @@ class Cifar10_1(torch.utils.data.Dataset):
         y = self._y[index]
         return self.transform(x), y
 
-sys.path.insert(0, '..')
+def get_cifar_10_1_loader(config):
+    
+    transform = create_transform(config, is_train=False)
+    cifar_10_1_dataset = Cifar10_1(transform)
+
+    test_loader = torch.utils.data.DataLoader(cifar_10_1_dataset, 
+                batch_size=16,
+                num_workers=config.test.dataloader.num_workers,
+                sampler=None,
+                shuffle=False,
+                drop_last=False,
+                pin_memory=config.test.dataloader.pin_memory)
+    
+    return test_loader
+
+
+# sys.path.insert(0, '..')
 
 if torch.cuda.is_available():
     device = 'cuda'
 
+with open("model_list.txt") as file:
+    models = [line.rstrip() for line in file]
+
 config = get_default_config()
-config.merge_from_file("config_files/pyramidnet_basic_110_84.yaml")
-model = create_model(config)
-checkpoint = torch.load("trained_models/pyramidnet_basic_110_84.pth")
-model.load_state_dict(checkpoint['model'])
-model.to(device)
-
-transform = create_transform(config, is_train=False)
-dataset = Cifar10_1(transform)
-
-if dist.is_available() and dist.is_initialized():
-    sampler = torch.utils.data.distributed.DistributedSampler(dataset)
-else:
-    sampler = None
-test_loader = torch.utils.data.DataLoader(dataset, 
-            batch_size=16,
-            num_workers=config.test.dataloader.num_workers,
-            sampler=sampler,
-            shuffle=False,
-            drop_last=False,
-            pin_memory=config.test.dataloader.pin_memory)
-
-_, test_loss = create_loss(config)
+cifar10_1_loader = get_cifar_10_1_loader(config)
+update_config(config)
+cifar10_loader = create_dataloader(config, is_train=False)
 logger = create_logger(name=__name__, distributed_rank=get_rank())
 
-preds, probs, labels, loss, acc = evaluate(config, model, test_loader, test_loss, logger)
+for model_name in models:
 
-np.savez('model_outputs/pyramidnet_basic_110_84_cifar10-1.npz',
-            preds=preds,
-            probs=probs,
-            labels=labels,
-            loss=loss,
-            acc=acc)
+    config = get_default_config()
+    config.merge_from_file("config_files/" + model_name + ".yaml")
+    model = create_model(config)
+    checkpoint = torch.load("trained_models/" + model_name + ".pth")
+    model.load_state_dict(checkpoint['model'])
+    model.to(device)
+    print("Loaded model from " + model_name + ".pth")
+    _, test_loss = create_loss(config)
+    
+
+    preds, probs, labels, loss, acc = evaluate(config, model, cifar10_1_loader, test_loss, logger)
+
+    np.savez("model_outputs/" + model_name + "_cifar10-1.npz",
+                preds=preds,
+                probs=probs,
+                labels=labels,
+                loss=loss,
+                acc=acc)
+
+    preds, probs, labels, loss, acc = evaluate(config, model, cifar10_loader, test_loss, logger)
+
+    np.savez("model_outputs/" + model_name + "_cifar10.npz",
+                preds=preds,
+                probs=probs,
+                labels=labels,
+                loss=loss,
+                acc=acc)
