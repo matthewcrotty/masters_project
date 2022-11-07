@@ -22,7 +22,7 @@ $ /usr/local/cuda/bin/nvcc --version
 
 # Create venv and install required packages:
 
-Python 3.7 is required
+Python 3.7 and Python3.7-venv are required
 
 ```
 $ python3.7 -m venv venv_name
