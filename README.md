@@ -24,6 +24,7 @@ $ /usr/local/cuda/bin/nvcc --version
 
 Python 3.7 and Python3.7-venv are required
 
+Create venv, and install correct torch version and packages:
 ```
 $ python3.7 -m venv venv_name
 $ source venv_name/bin/activate

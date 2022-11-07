@@ -6,12 +6,11 @@ import time
 import tqdm
 import torch.nn.functional as F
 
-
+sys.path.append("../pytorch_image_classification/")
 from pytorch_image_classification import (
     get_default_config,
     create_model,
     create_loss,
-    apply_data_parallel_wrapper,
     create_transform
 )
 
@@ -20,10 +19,6 @@ from pytorch_image_classification.utils import (
     AverageMeter,
     get_rank,
 )
-
-
-# from pytorch_image_classification.pytorch_image_classification.transforms import create_transform
-
 
 
 def evaluate(config, model, test_loader, loss_func, logger):
@@ -76,6 +71,7 @@ def evaluate(config, model, test_loader, loss_func, logger):
     labels = np.concatenate(pred_label_all)
     return preds, probs, labels, loss_meter.avg, accuracy
 
+
 class Cifar10_1(torch.utils.data.Dataset):
     def __init__(self, transform):
         super(Cifar10_1, self).__init__()
@@ -103,20 +99,6 @@ checkpoint = torch.load("trained_models/pyramidnet_basic_110_84.pth")
 model.load_state_dict(checkpoint['model'])
 model.to(device)
 
-# print(model)
-# model = apply_data_parallel_wrapper(config, model)
-
-totalcount = 0
-for name, param in model.named_parameters():
-    if param.requires_grad:
-        total = 1
-        for p in param.data.shape:
-            total *= p
-        totalcount += total
-
-print(totalcount)
-
-
 transform = create_transform(config, is_train=False)
 dataset = Cifar10_1(transform)
 
@@ -134,8 +116,6 @@ test_loader = torch.utils.data.DataLoader(dataset,
 
 _, test_loss = create_loss(config)
 logger = create_logger(name=__name__, distributed_rank=get_rank())
-
-
 
 preds, probs, labels, loss, acc = evaluate(config, model, test_loader, test_loss, logger)
 
