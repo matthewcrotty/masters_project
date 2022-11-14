@@ -70,7 +70,7 @@ def bin_norm_unique_output(cifar10_1_outputs_o, cifar10_outputs_o, cifar10_1_lab
         plt.clf() 
         count += 1
 
-def close_distant_split(cifar10_1_preds, name, cifar10_1_outputs, bin1_idx, bin2_idx, bin3_idx):
+def close_distant_split(cifar10_1_preds, name, cifar10_1_outputs, bin_idx=None, bin_label=None):
     # close set -> max, mode of prediction vectors between model i, j within some epsilon
     # distant set -> else
     close, distant = [], []
@@ -97,6 +97,8 @@ def close_distant_split(cifar10_1_preds, name, cifar10_1_outputs, bin1_idx, bin2
         avg2_dist = 0
         for i in range(num_models):
             for j in range(i, num_models):
+                if bin_idx is not None and i not in bin_idx and j not in bin_idx:
+                    continue
                 distance = np.linalg.norm(cifar10_1_images[im][i] - cifar10_1_images[im][j])
                 max_distance = max(distance, max_distance)
                 avg_distance += distance
@@ -108,10 +110,19 @@ def close_distant_split(cifar10_1_preds, name, cifar10_1_outputs, bin1_idx, bin2
                     
                         
         max2.append(max2_dist)
-        avg2.append(avg2_dist/i)
+        if bin_idx is not None:
+            avg2_dist /= len(bin_idx)
+            avg_distance /= len(bin_idx)
+        else:
+            avg2_dist /= num_models
+            avg_distance /= num_models
+        avg2.append(avg2_dist)
         distances.append(max_distance)
-        avg_distances.append(avg_distance/(i**2))
+        avg_distances.append(avg_distance/(num_models**2))
         uniques.append(len(list(set(cifar10_1_outputs[im]))))
+
+    if bin_idx is not None:
+        name += "_bin" + str(bin_label)
 
     color = 'blue' if name == "Cifar10" else 'orange'
     plt.scatter(distances, uniques, color=color)
@@ -230,6 +241,12 @@ def close_distant_split(cifar10_1_preds, name, cifar10_1_outputs, bin1_idx, bin2
 
 
 cifar10_outputs, cifar10_1_outputs, cifar10_labels, cifar10_1_labels, bin1_idx, bin2_idx, bin3_idx, cifar10_preds, cifar10_1_preds = parse_data()
-# bin_norm_unique_output(cifar10_1_outputs, cifar10_outputs, cifar10_1_labels, cifar10_labels, bin1_idx, bin2_idx, bin3_idx)
-close_distant_split(cifar10_1_preds, "Cifar10-1", cifar10_1_outputs, bin1_idx, bin2_idx, bin3_idx)
-close_distant_split(cifar10_preds, "Cifar10", cifar10_outputs, bin1_idx, bin2_idx, bin3_idx)
+bin_norm_unique_output(cifar10_1_outputs, cifar10_outputs, cifar10_1_labels, cifar10_labels, bin1_idx, bin2_idx, bin3_idx)
+
+count = 1
+for bin_idx in [bin1_idx, bin2_idx, bin3_idx]:
+    close_distant_split(cifar10_1_preds, "Cifar10-1", cifar10_1_outputs, bin_idx, count)
+    close_distant_split(cifar10_preds, "Cifar10", cifar10_outputs, bin_idx, count)
+    count += 1
+close_distant_split(cifar10_1_preds, "Cifar10-1", cifar10_1_outputs)
+close_distant_split(cifar10_preds, "Cifar10", cifar10_outputs)
