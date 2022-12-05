@@ -68,7 +68,7 @@ masters_project/
 
 # Download pretrained models
 
-Models are too large to be saved on github, are available here: Link
+Models are too large to be saved on github, are available here: [Google Drive](https://drive.google.com/drive/folders/1vngHSSu4z-b7o7EqiCqK6Tr8sMesY0Nz?usp=sharing)
 
 Place .pth files in /trained_models
 
